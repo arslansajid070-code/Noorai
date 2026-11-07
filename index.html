@@ -80,14 +80,41 @@ function message(text,type){
 
 form.addEventListener("submit",async(e)=>{
  e.preventDefault();
- const question=input.value.trim();
- if(!question)return;
- message(question,"user");
- input.value="";
- send.disabled=true;
- message("NOOR AI ka brain abhi connect hona baqi hai. Jald hi jawab dena shuru karega!","ai");
- send.disabled=false;
+ 
+const question = input.value.trim();
+if (!question) return;
+
+message(question, "user");
+input.value = "";
+send.disabled = true;
+
+try {
+  message("NOOR soch raha hai...", "ai");
+
+  const response = await fetch("/api/chat", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      message: question
+    })
+  });
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error(data.error || "AI request failed");
+  }
+
+  message(data.reply, "ai");
+
+} catch (error) {
+  message("NOOR se connection nahi ho saka. Dobara koshish karo.", "ai");
+} finally {
+  send.disabled = false;
+}
 });
+
 </script>
 </body>
 </html>
