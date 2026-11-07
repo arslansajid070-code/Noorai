@@ -1,16 +1,14 @@
 
 module.exports = async function handler(req, res) {
   if (req.method !== "POST") {
-    return res.status(405).json({
-      error: "Only POST requests are allowed"
-    });
+    return res.status(405).json({ error: "POST only" });
   }
 
-  const apiKey = process.env.GEMINI_API_KEY;
+  const apiKey = process.env.OPENROUTER_API_KEY;
 
   if (!apiKey) {
     return res.status(500).json({
-      error: "NOOR AI API key is not configured"
+      error: "OpenRouter key missing"
     });
   }
 
@@ -28,22 +26,26 @@ module.exports = async function handler(req, res) {
 
   try {
     const response = await fetch(
-      "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent",
+      "https://openrouter.ai/api/v1/chat/completions",
       {
         method: "POST",
         headers: {
+          "Authorization": `Bearer ${apiKey}`,
           "Content-Type": "application/json",
-          "x-goog-api-key": apiKey
+          "X-OpenRouter-Title": "NOOR AI"
         },
         body: JSON.stringify({
-          systemInstruction: {
-            parts: [{
-              text: "You are NOOR AI, a helpful educational assistant. Understand Urdu, Roman Urdu and English. Explain things clearly and respectfully."
-            }]
-          },
-          contents: [{
-            parts: [{ text: message }]
-          }]
+          model: "openrouter/auto",
+          messages: [
+            {
+              role: "system",
+              content: "You are NOOR AI, a helpful educational assistant. Understand Urdu, Roman Urdu and English. Explain clearly and respectfully."
+            },
+            {
+              role: "user",
+              content: message
+            }
+          ]
         })
       }
     );
@@ -52,16 +54,14 @@ module.exports = async function handler(req, res) {
 
     if (!response.ok) {
       return res.status(502).json({
-        error: "AI service request failed"
+        error: "OpenRouter request failed"
       });
     }
 
-    const reply = data.candidates?.[0]?.content?.parts
-      ?.map(part => part.text || "")
-      .join("");
+    const reply = data.choices?.[0]?.message?.content;
 
     return res.status(200).json({
-      reply: reply || "NOOR AI could not generate a response."
+      reply: reply || "NOOR could not generate a response."
     });
 
   } catch (error) {
@@ -70,4 +70,5 @@ module.exports = async function handler(req, res) {
     });
   }
 };
+
 
